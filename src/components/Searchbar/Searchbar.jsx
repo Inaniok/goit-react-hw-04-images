@@ -10,16 +10,16 @@ let schema = yup.object().shape({
 const initialValues = { search: '' };
 
 export const Searchbar = ({ onSubmit }) => {
-  const handleSubmit = (values, {resetForm}) => {
+  const handleSubmit = (values, { resetForm }) => {
     onSubmit(values.search.toLowerCase().trim());
-    resetForm()
-  }
+    resetForm();
+  };
   return (
     <Header>
       <Formik
         initialValues={initialValues}
         validationSchema={schema}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
       >
         <SearchForm>
           <SearchBtn type="submit">
