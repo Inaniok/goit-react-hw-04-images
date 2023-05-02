@@ -15,65 +15,51 @@ export class App extends Component {
     search: '',
     currentPage: 1,
     currentImage: '',
-    currentScoreImages: 0,
-    totalHits: 0,
+      totalHits: 0,
     status: 'idle',
     showModal: false,
   };
 
-  async componentDidMount() {
-    try {
-      this.setState({ status: 'pending' });
+  // async componentDidMount() {
+  //   try {
+  //     this.setState({ status: 'pending' });
 
-      const { search } = this.state;
+  //     const { search } = this.state;
 
-      const { hits, totalHits } = await fetchImages(search);
+  //     const { hits, totalHits } = await fetchImages(search);
 
-      this.setState({
-        images: hits,
-        totalHits,
-        status: 'resolve',
-      });
-    } catch (error) {
-      this.setState({ status: 'reject' });
-      toast.error('ooops something went wrong');
-    }
-  }
+  //     this.setState({
+  //       images: hits,
+  //       totalHits,
+  //       status: 'resolve',
+  //     });
+  //   } catch (error) {
+  //     this.setState({ status: 'reject' });
+  //     toast.error('ooops something went wrong');
+  //   }
+  // }
 
   async componentDidUpdate(_, prevState) {
     try {
       const { search, currentPage } = this.state;
       const prevSearch = prevState.search;
-      const PrevPage = prevState.currentPage;
+      const prevPage = prevState.currentPage;
 
-      if (prevSearch !== search) {
+      if (prevSearch !== search || prevPage !== currentPage) {
         this.setState({
           status: 'pending',
-          currentPage: 1,
-          currentScoreImages: 0,
         });
 
-        const { hits, totalHits } = await fetchImages(search);
-
-        this.setState({
-          images: hits,
-          totalHits,
-          status: 'resolve',
-        });
+        const { hits, totalHits } = await fetchImages(search, currentPage);
 
         if (hits.length === 0) {
           toast.info(`on request ${search} Nothing found`);
         }
-      }
-
-      if (PrevPage !== currentPage && currentPage !== 1) {
-        this.setState({ status: 'pending' });
-
-        const { hits } = await fetchImages(search, currentPage);
 
         this.setState(prevState => ({
           images: [...prevState.images, ...hits],
           status: 'resolve',
+          totalHits,
         }));
       }
     } catch (error) {
@@ -82,10 +68,12 @@ export class App extends Component {
     }
   }
 
-  handleSearchValue = (value, { resetForm }) => {
-    this.setState({ search: value.search });
-
-    resetForm();
+  handleSearchValue = (search) => {
+    this.setState({
+      search,
+      currentPage: 1,
+      totalHits: 0,
+    });    
   };
 
   handleNextPageClick = () => {
@@ -97,7 +85,7 @@ export class App extends Component {
   };
 
   handleModalClose = () => {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false, currentImage: " " });
   };
 
   render() {
