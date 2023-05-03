@@ -71,6 +71,7 @@ export class App extends Component {
   handleSearchValue = (search) => {
     this.setState({
       search,
+      images: [],
       currentPage: 1,
       totalHits: 0,
     });    
