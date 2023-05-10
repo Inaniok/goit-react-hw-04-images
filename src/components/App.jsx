@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ToastContainer, toast } from 'react-toastify';
 import { fetchImages } from '../helpers/api/index';
@@ -9,110 +9,73 @@ import { Modal } from './Modal/Modal';
 import { AppWrap } from './App.styled';
 import 'react-toastify/dist/ReactToastify.css';
 
-export class App extends Component {
-  state = {
-    images: [],
-    search: '',
-    currentPage: 1,
-    currentImage: '',
-      totalHits: 0,
-    status: 'idle',
-    showModal: false,
-  };
+export const App = () => {
+  const [search, setSearch] = useState('');
+  const [images, setImages] = useState([]);
+  const [currentImage, setCurrentImage] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalHits, setTotalHits] = useState(0);
+  const [status, setStatus] = useState('idle');
 
-  // async componentDidMount() {
-  //   try {
-  //     this.setState({ status: 'pending' });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setStatus('pending');
 
-  //     const { search } = this.state;
+        if (currentPage !== 1) {
+          const { hits } = await fetchImages(search, currentPage);
 
-  //     const { hits, totalHits } = await fetchImages(search);
+          setImages(prev => [...prev, ...hits]);
+          setStatus('resolved');
 
-  //     this.setState({
-  //       images: hits,
-  //       totalHits,
-  //       status: 'resolve',
-  //     });
-  //   } catch (error) {
-  //     this.setState({ status: 'reject' });
-  //     toast.error('ooops something went wrong');
-  //   }
-  // }
+          return;
+        }
 
-  async componentDidUpdate(_, prevState) {
-    try {
-      const { search, currentPage } = this.state;
-      const prevSearch = prevState.search;
-      const prevPage = prevState.currentPage;
+        const { hits, totalHits } = await fetchImages(search);
 
-      if (prevSearch !== search || prevPage !== currentPage) {
-        this.setState({
-          status: 'pending',
-        });
-
-        const { hits, totalHits } = await fetchImages(search, currentPage);
+        setImages(hits);
+        setTotalHits(totalHits);
+        setStatus('resolved');
 
         if (hits.length === 0) {
           toast.info(`on request ${search} Nothing found`);
         }
-
-        this.setState(prevState => ({
-          images: [...prevState.images, ...hits],
-          status: 'resolve',
-          totalHits,
-        }));
+      } catch (error) {
+        setStatus('rejected');
+        toast.error('ooops something went wrong');
       }
-    } catch (error) {
-      this.setState({ status: 'reject' });
-      toast.error('ooops something went wrong');
-    }
-  }
+    };
+    fetchData();
+  }, [search, currentPage]);
 
-  handleSearchValue = (search) => {
-    this.setState({
-      search,
-      images: [],
-      currentPage: 1,
-      totalHits: 0,
-    });    
+  const handleSearchValue = ({ theme }, { resetForm }) => {
+        setSearch(theme);
+    setCurrentPage(1);
+    resetForm();
   };
 
-  handleNextPageClick = () => {
-    this.setState(prevState => ({ currentPage: prevState.currentPage + 1 }));
-  };
+  const handleLoadMore = () => setCurrentPage(prev => prev + 1);
 
-  handleCurrentImgClick = evt => {
-    this.setState({ currentImage: evt, showModal: true });
-  };
+  const handleCurrentImgClick = evt => setCurrentImage(evt);
 
-  handleModalClose = () => {
-    this.setState({ showModal: false, currentImage: " " });
-  };
+  return (
+    <AppWrap>
+      <Searchbar onSubmit={handleSearchValue} />
+      <ImageGallery imgList={images} onClick={handleCurrentImgClick} />
 
-  render() {
-    const { images, status, showModal, currentImage, totalHits } = this.state;
-    const currentScoreImages = images.length;
+      {status === 'resolved' && images.length < totalHits && (
+        <Button onClick={handleLoadMore} />
+      )}
 
-    return (
-      <AppWrap>
-        <Searchbar onSubmit={this.handleSearchValue} />
-        <ImageGallery imgList={images} onClick={this.handleCurrentImgClick} />
+      {currentImage && (
+        <Modal
+          image={currentImage}
+          handleModalClose={() => setCurrentImage(null)}
+        />
+      )}
 
-        {status === 'pending' && <Loader />}
-
-        {status === 'resolve' && currentScoreImages < totalHits && (
-          <Button onClick={this.handleNextPageClick} />
-        )}
-
-        {showModal && (
-          <Modal
-            image={currentImage}
-            handleModalClose={this.handleModalClose}
-          />
-        )}
-
-        <ToastContainer />
-      </AppWrap>
-    );
-  }
-}
+      {status === 'pending' && <Loader />}
+      <ToastContainer />
+    </AppWrap>
+  );
+};
