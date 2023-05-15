@@ -7,10 +7,17 @@ const modalRoot = document.querySelector('#modal-root');
 
 export const Modal = ({ handleModalClose, image }) => {
   useEffect(() => {
+    const handleKeyDown = ({ code }) => {
+      if (code !== 'Escape') {
+        return;
+      }
+      handleModalClose();
+    };
+
     document.addEventListener('keydown', handleKeyDown);
 
     return () => document.removeEventListener('keydown', handleKeyDown);
-  });
+  }, [handleModalClose]);
 
   const handleBackdropClick = ({ target, currentTarget }) => {
     if (target !== currentTarget) {
@@ -19,25 +26,15 @@ export const Modal = ({ handleModalClose, image }) => {
     handleModalClose();
   };
 
-  const handleKeyDown = ({ code }) => {
-    if (code !== 'Escape') {
-      return;
-    }
-
-    handleModalClose();
-  };
-
-
-    return createPortal(
-      <Overlay onClick={handleBackdropClick}>
-        <ModalWindow>
-          <img src={image} alt="" />
-        </ModalWindow>
-      </Overlay>,
-      modalRoot
-    );
-  }
-
+  return createPortal(
+    <Overlay onClick={handleBackdropClick}>
+      <ModalWindow>
+        <img src={image} alt="" />
+      </ModalWindow>
+    </Overlay>,
+    modalRoot
+  );
+};
 
 Modal.propTypes = {
   handleModalClose: PropTypes.func.isRequired,
